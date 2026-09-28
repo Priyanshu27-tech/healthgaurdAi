@@ -246,8 +246,14 @@ export const DoctorReviewPage = () => {
         </Card>
       </div>
 
-      {/* Future ML Prediction Panel Placeholder */}
-      <PredictionPanel />
+      {/* AI Clinical Decision Support Risk Stratification Panel */}
+      <PredictionPanel
+        data={assessment.mlPrediction}
+        assessmentId={assessment._id}
+        onPredictionUpdated={(updatedPred) => {
+          setAssessment((prev) => ({ ...prev, mlPrediction: updatedPred }));
+        }}
+      />
 
       {/* Doctor Review Interactive Submission Form */}
       <DoctorReviewPanel

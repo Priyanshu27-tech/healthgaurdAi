@@ -8,7 +8,7 @@ const connectDB = async () => {
   if (uri && !uri.includes('localhost:27017')) {
     try {
       mongoose.set('strictQuery', false);
-      await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000 });
+      await mongoose.connect(uri, { serverSelectionTimeoutMS: 4000 });
       console.log(`[Database] Connected to external MongoDB: ${mongoose.connection.host}`);
       return;
     } catch (err) {

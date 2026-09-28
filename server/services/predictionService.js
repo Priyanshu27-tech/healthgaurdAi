@@ -1,73 +1,94 @@
 /**
  * ============================================================================
- * HealthGuard AI - Machine Learning Prediction Service (Architectural Placeholder)
+ * HealthGuard AI - Machine Learning Prediction Service (Active Phase 2 Integration)
  * ============================================================================
  * 
- * IMPORTANT ARCHITECTURAL NOTE:
- * This service currently acts as a typed architectural contract and bridge for 
- * future Machine Learning / Clinical AI integration.
- * 
- * In this release:
- * - NO machine learning model is loaded or executed.
- * - NO AI inference or diagnostic prediction algorithm is performed.
- * - NO fake percentages, simulated diagnoses, or synthetic predictions are produced.
- * 
- * FUTURE INTEGRATION ROADMAP:
- * When the dedicated Python/FastAPI ML microservice is deployed:
- * 1. An incoming patient assessment or clinical event triggers this service.
- * 2. This service transforms and normalizes patient vitals, symptoms, and lifestyle 
- *    vectors into the tensor/payload format expected by the Python inference engine.
- * 3. Makes an authenticated HTTP/gRPC request:
- *       POST http://ml-inference-service:8000/api/v1/predict/risk
- *       Payload: { vitals, symptoms, medicalHistory, age, gender }
- * 4. Receives the validated inference response:
- *       {
- *         prediction: "Cardiovascular Risk Stratification",
- *         probability: 0.24,
- *         riskLevel: "Low",
- *         confidenceInterval: [0.21, 0.28],
- *         explanation: [
- *           { feature: "bloodPressure_systolic", contribution: 0.12 },
- *           { feature: "smoking_status", contribution: 0.08 }
- *         ]
- *       }
- * 5. Securely persists the structured inference result alongside the assessment 
- *    for doctor review and clinical validation.
- * 6. Emits notifications to attending physicians for high-risk stratification.
- * 
- * For now, all assessments flow strictly from Patient -> Node.js API -> MongoDB 
- * -> Licensed Doctor Review Workflow.
+ * Dispatches clinical risk assessment payloads to the Python/FastAPI microservice
+ * running on http://127.0.0.1:8000.
  */
 
 class PredictionService {
   /**
-   * Placeholder hook for future ML service dispatch.
-   * Currently inactive by design to maintain zero-AI compliance in Phase 1.
+   * Request clinical risk prediction from the FastAPI ML microservice.
    * 
    * @param {Object} assessmentData - Standardized assessment data object
-   * @returns {Promise<null>} Inactive placeholder
+   * @returns {Promise<Object|null>} Structured prediction data or null on error
    */
   static async requestRiskPrediction(assessmentData) {
-    // TODO [Phase 2]: Connect to FastAPI / PyTorch inference service
-    // Example:
-    // const response = await axios.post(`${process.env.ML_SERVICE_URL}/predict`, assessmentData);
-    // return response.data;
-    
-    return null;
+    const mlUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+
+    try {
+      const payload = {
+        symptoms: assessmentData.symptoms || [],
+        vitals: assessmentData.vitals || {},
+        lifestyle: assessmentData.lifestyle || {},
+        medicalHistory: assessmentData.medicalHistory || {},
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+      const response = await fetch(`${mlUrl}/predict`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.warn(`[ML Service] Inference request returned HTTP ${response.status}`);
+        return null;
+      }
+
+      const resJson = await response.json();
+      if (resJson.success && resJson.data) {
+        console.log(`[ML Service] Prediction generated: ${resJson.data.riskLevel} Risk (Probability: ${resJson.data.probability})`);
+        return resJson.data;
+      }
+
+      return null;
+    } catch (err) {
+      console.warn(`[ML Service] Microservice unreachable at ${mlUrl}: ${err.message}. Gracefully bypassing.`);
+      return null;
+    }
   }
 
   /**
-   * Healthcheck for future external ML prediction microservice.
+   * Query live health check of the ML prediction microservice.
    * 
-   * @returns {Object} Connection readiness metadata
+   * @returns {Promise<Object>} Connection readiness metadata
    */
-  static getServiceStatus() {
+  static async getServiceStatus() {
+    const mlUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+      const response = await fetch(`${mlUrl}/health`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          status: 'online',
+          serviceConnected: true,
+          engine: data.engine || 'FastAPI Clinical Risk Engine',
+          version: data.version || '2.0.0',
+          endpoint: `${mlUrl}/predict`,
+        };
+      }
+    } catch (err) {
+      // offline
+    }
+
     return {
       status: 'standby',
       serviceConnected: false,
-      engine: 'None (Phase 1 Baseline Platform)',
-      message: 'ML prediction microservice is disconnected by configuration. Real clinical review workflows are active.',
-      futureEndpoint: 'POST /api/predictions',
+      engine: 'FastAPI Service Offline (Automatic Fallback Active)',
+      endpoint: `${mlUrl}/predict`,
     };
   }
 }

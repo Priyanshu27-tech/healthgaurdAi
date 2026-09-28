@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL:  import.meta.env.VITE_API_URL + "/api",
   headers: {
     'Content-Type': 'application/json',
   },
@@ -70,6 +70,7 @@ export const doctorService = {
 export const assessmentService = {
   submit: (data) => api.post('/assessments', data),
   getById: (id) => api.get(`/assessments/${id}`),
+  runPrediction: (id) => api.post(`/assessments/${id}/predict`),
 };
 
 // Appointment Endpoints

@@ -30,20 +30,21 @@ export const AssessmentHistoryPage = () => {
   const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchAssessments = async () => {
-      try {
-        setLoading(true);
-        const res = await patientService.getAssessments();
-        if (res.data.success) {
-          setAssessments(res.data.assessments);
-        }
-      } catch (err) {
-        console.error('Error fetching assessments:', err);
-      } finally {
-        setLoading(false);
+  const fetchAssessments = async () => {
+    try {
+      setLoading(true);
+      const res = await patientService.getAssessments();
+      if (res.data.success) {
+        setAssessments(res.data.assessments);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching assessments:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchAssessments();
   }, []);
 
@@ -91,6 +92,7 @@ export const AssessmentHistoryPage = () => {
                     <th className="py-3.5 px-4 sm:px-6">Submission Date</th>
                     <th className="py-3.5 px-4">Symptoms Logged</th>
                     <th className="py-3.5 px-4">Review Status</th>
+                    <th className="py-3.5 px-4">AI Risk Level</th>
                     <th className="py-3.5 px-4">Attending Physician</th>
                     <th className="py-3.5 px-4 text-right">Action</th>
                   </tr>
@@ -137,6 +139,24 @@ export const AssessmentHistoryPage = () => {
                               ? 'Clinically Reviewed'
                               : 'Awaiting Review'}
                           </span>
+                        </td>
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          {ass.mlPrediction?.riskLevel ? (
+                            <Badge
+                              variant={
+                                ass.mlPrediction.riskLevel.toLowerCase() === 'high'
+                                  ? 'danger'
+                                  : ass.mlPrediction.riskLevel.toLowerCase() === 'moderate'
+                                  ? 'warning'
+                                  : 'success'
+                              }
+                              size="sm"
+                            >
+                              {ass.mlPrediction.riskLevel} ({Math.round((ass.mlPrediction.probability || 0) * 100)}%)
+                            </Badge>
+                          ) : (
+                            <span className="text-slate-400 text-xs italic">Unanalyzed</span>
+                          )}
                         </td>
                         <td className="py-4 px-4 text-slate-600 whitespace-nowrap">
                           {ass.review?.doctorId?.name || (
@@ -271,8 +291,15 @@ export const AssessmentHistoryPage = () => {
               </div>
             </div>
 
-            {/* Future ML Prediction Placeholder */}
-            <PredictionPanel />
+            {/* AI Clinical Risk Stratification Panel */}
+            <PredictionPanel
+              data={selectedAssessment.mlPrediction}
+              assessmentId={selectedAssessment._id}
+              onPredictionUpdated={(updatedPred) => {
+                setSelectedAssessment((prev) => ({ ...prev, mlPrediction: updatedPred }));
+                fetchAssessments();
+              }}
+            />
           </div>
         </Modal>
       )}

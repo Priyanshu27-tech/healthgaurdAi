@@ -34,25 +34,25 @@ export const DoctorPatientDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const fetchPatientChart = async () => {
-      try {
-        setLoading(true);
-        const res = await doctorService.getPatientById(id);
-        if (res.data.success) {
-          setPatient(res.data.patient);
-          setProfile(res.data.profile);
-          setAssessments(res.data.assessments);
-          setRecords(res.data.records);
-          setAppointments(res.data.appointments);
-        }
-      } catch (err) {
-        setError(err.response?.data?.message || 'Unable to load patient chart.');
-      } finally {
-        setLoading(false);
+  const fetchPatientChart = async () => {
+    try {
+      setLoading(true);
+      const res = await doctorService.getPatientById(id);
+      if (res.data.success) {
+        setPatient(res.data.patient);
+        setProfile(res.data.profile);
+        setAssessments(res.data.assessments);
+        setRecords(res.data.records);
+        setAppointments(res.data.appointments);
       }
-    };
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to load patient chart.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPatientChart();
   }, [id]);
 
@@ -210,8 +210,14 @@ export const DoctorPatientDetailPage = () => {
           </div>
         </Card>
 
-        {/* Future ML Prediction Readiness Container */}
-        <PredictionPanel />
+        {/* AI Clinical Risk Stratification */}
+        <PredictionPanel
+          data={assessments?.[0]?.mlPrediction}
+          assessmentId={assessments?.[0]?._id}
+          onPredictionUpdated={() => {
+            fetchPatientChart();
+          }}
+        />
       </div>
 
       {/* Assessment History */}

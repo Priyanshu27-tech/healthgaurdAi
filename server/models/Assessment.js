@@ -40,6 +40,20 @@ const assessmentSchema = new mongoose.Schema(
       default: 'pending',
       index: true,
     },
+    mlPrediction: {
+      prediction: { type: String, default: '' },
+      probability: { type: Number, default: 0 },
+      riskLevel: { type: String, enum: ['Low', 'Moderate', 'High', ''], default: '' },
+      confidenceScore: { type: Number, default: 0 },
+      explanation: [
+        {
+          feature: { type: String },
+          contribution: { type: Number },
+        },
+      ],
+      recommendations: [{ type: String }],
+      generatedAt: { type: Date },
+    },
     submittedAt: {
       type: Date,
       default: Date.now,

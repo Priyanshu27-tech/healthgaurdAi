@@ -4,14 +4,13 @@ HealthGuard AI is a production-grade digital healthcare platform connecting pati
 
 ---
 
-## Important Architectural Compliance
+## Clinical AI Integration (Phase 2 Active)
 
-> [!IMPORTANT]
-> **Zero Automated Diagnosis / Zero AI Inference in Current Release**:
-> - This version contains **NO** machine learning inference, prediction algorithms, or Python ML services.
-> - The application strictly avoids fake percentages, fabricated diagnoses, or synthetic disease predictions.
-> - All health reviews and guidance are conducted and authored exclusively by licensed human physicians.
-> - A dedicated service placeholder (`server/services/predictionService.js`) and UI container (`client/src/components/common/PredictionPanel.jsx`) are pre-architected so that a Python/FastAPI microservice (`POST /api/predictions`) can be seamlessly connected in future phases without breaking schema contracts.
+> [!NOTE]
+> **Evidence-Based Clinical Decision Support (CDSS)**:
+> - HealthGuard AI features an active **Python FastAPI ML Microservice** calibrated against ACC/AHA and Framingham cardiovascular & metabolic risk estimation models.
+> - The model outputs risk probabilities (0% - 100%), clinical risk tiers (`Low`, `Moderate`, `High`), multivariate feature contribution explainability, and evidence-based clinical recommendations.
+> - It functions as a **Clinical Decision Support System (CDSS)** to assist attending physicians during patient intake, while preserving final clinical determination for licensed medical doctors.
 
 ---
 
@@ -71,19 +70,20 @@ HealthGuard AI is a production-grade digital healthcare platform connecting pati
 ## System Architecture
 
 ```
-Frontend (React + Vite + Tailwind + Recharts)
+Frontend (React + Vite + Tailwind + Recharts)  ── Port 5173
    │
    ▼  REST API (JWT Bearer Token / JSON)
-Express.js Backend Server (Port 5000)
+Express.js Backend Server                      ── Port 5000
    ├── Auth Middleware (JWT & RBAC Guards)
    ├── Error Sanitization & Input Validation
-   └── Prediction Service [Phase 1: Inactive Standby]
+   ├── Prediction Service (Axios Client)
+   │        │
+   │        ▼  HTTP REST (POST /predict)
+   │     Python FastAPI ML Microservice        ── Port 8000
+   │        └── Calibrated CDSS Risk Engine (NumPy)
    │
    ▼
-Mongoose ORM ──▶ MongoDB (Local / External URI / Isolated Dev Engine)
-
-Future Phase 2 Architecture:
-React ──▶ Express ──▶ Prediction Service ──▶ Python / FastAPI ML API ──▶ ML Model ──▶ Express ──▶ MongoDB
+Mongoose ORM ──▶ MongoDB Atlas Cluster
 ```
 
 ---

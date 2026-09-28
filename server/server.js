@@ -46,9 +46,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Future ML Prediction Architecture Readiness Check
-app.get('/api/predictions/status', (req, res) => {
-  const status = PredictionService.getServiceStatus();
+// Live ML Prediction Microservice Status Check
+app.get('/api/predictions/status', async (req, res) => {
+  const status = await PredictionService.getServiceStatus();
   res.status(200).json({
     success: true,
     data: status,
@@ -88,11 +88,11 @@ const startServer = async () => {
       await seedData();
     }
 
-    const server = app.listen(PORT, () => {
+    const server = app.listen(PORT, '0.0.0.0', () => {
       console.log(`====================================================`);
-      console.log(` HealthGuard AI Server is running on port ${PORT}`);
-      console.log(` API Healthcheck: http://localhost:${PORT}/api/health`);
-      console.log(` Future ML Status: http://localhost:${PORT}/api/predictions/status`);
+      console.log(` HealthGuard AI Server is running on http://127.0.0.1:${PORT}`);
+      console.log(` API Healthcheck: http://127.0.0.1:${PORT}/api/health`);
+      console.log(` Future ML Status: http://127.0.0.1:${PORT}/api/predictions/status`);
       console.log(`====================================================`);
     });
 

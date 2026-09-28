@@ -3,6 +3,7 @@ const PatientProfile = require('../models/PatientProfile');
 const DoctorReview = require('../models/DoctorReview');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const PredictionService = require('../services/predictionService');
 
 /**
  * @desc    Submit new health assessment (Patient)
@@ -41,6 +42,20 @@ const createAssessment = async (req, res, next) => {
       }
     }
 
+    // Trigger ML Clinical Risk Stratification
+    try {
+      const mlPrediction = await PredictionService.requestRiskPrediction(newAssessment);
+      if (mlPrediction) {
+        newAssessment.mlPrediction = {
+          ...mlPrediction,
+          generatedAt: new Date(),
+        };
+        await newAssessment.save();
+      }
+    } catch (mlErr) {
+      console.warn('[Assessment] ML prediction dispatch error (non-fatal):', mlErr.message);
+    }
+
     // Create confirmation notification for the patient
     await Notification.create({
       userId: req.user._id,
@@ -59,15 +74,6 @@ const createAssessment = async (req, res, next) => {
         link: `/doctor/assessments/${newAssessment._id}`,
       });
     }
-
-    /**
-     * NOTE: Future ML prediction integration hook:
-     * When external ML microservice is enabled, this is where predictionService
-     * would be called asynchronously:
-     * // PredictionService.requestRiskPrediction(newAssessment);
-     * 
-     * In this production version: Zero automated diagnosis or fake metrics.
-     */
 
     return res.status(201).json({
       success: true,
@@ -128,7 +134,59 @@ const getAssessmentById = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Re-run or generate ML prediction for an assessment
+ * @route   POST /api/assessments/:id/predict
+ * @access  Private (Patient owner or Doctor)
+ */
+const runAssessmentPrediction = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const assessment = await Assessment.findById(id);
+    if (!assessment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Assessment record not found.',
+      });
+    }
+
+    if (
+      req.user.role === 'patient' &&
+      assessment.patientId.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You do not have permission to analyze another patient’s assessment.',
+      });
+    }
+
+    const predictionData = await PredictionService.requestRiskPrediction(assessment);
+    if (!predictionData) {
+      return res.status(503).json({
+        success: false,
+        message: 'ML prediction microservice is currently unreachable. Please verify ML service status.',
+      });
+    }
+
+    assessment.mlPrediction = {
+      ...predictionData,
+      generatedAt: new Date(),
+    };
+    await assessment.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Risk assessment calculated successfully.',
+      prediction: assessment.mlPrediction,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createAssessment,
   getAssessmentById,
+  runAssessmentPrediction,
 };

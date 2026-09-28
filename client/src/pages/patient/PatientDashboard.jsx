@@ -440,8 +440,11 @@ export const PatientDashboard = () => {
           </div>
         </Card>
 
-        {/* Reusable Section 15 Prediction Panel Placeholder */}
-        <PredictionPanel />
+        {/* Reusable Section 15 Prediction Panel */}
+        <PredictionPanel
+          data={recentAssessment?.mlPrediction}
+          assessmentId={recentAssessment?._id}
+        />
       </div>
     </div>
   );

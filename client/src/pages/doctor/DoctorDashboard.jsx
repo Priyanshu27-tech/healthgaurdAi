@@ -188,6 +188,7 @@ export const DoctorDashboard = () => {
                   <th className="py-3 px-4">Submission Date</th>
                   <th className="py-3 px-4">Reported Symptoms</th>
                   <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">AI Risk Triage</th>
                   <th className="py-3 px-6 text-right">Action</th>
                 </tr>
               </thead>
@@ -228,6 +229,24 @@ export const DoctorDashboard = () => {
                       <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
                         Pending Clinical Review
                       </span>
+                    </td>
+                    <td className="py-4 px-4 whitespace-nowrap">
+                      {ass.mlPrediction?.riskLevel ? (
+                        <Badge
+                          variant={
+                            ass.mlPrediction.riskLevel.toLowerCase() === 'high'
+                              ? 'danger'
+                              : ass.mlPrediction.riskLevel.toLowerCase() === 'moderate'
+                              ? 'warning'
+                              : 'success'
+                          }
+                          size="sm"
+                        >
+                          {ass.mlPrediction.riskLevel} ({Math.round((ass.mlPrediction.probability || 0) * 100)}%)
+                        </Badge>
+                      ) : (
+                        <span className="text-slate-400 text-xs italic">Unanalyzed</span>
+                      )}
                     </td>
                     <td className="py-4 px-6 text-right whitespace-nowrap">
                       <Button
